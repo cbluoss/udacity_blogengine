@@ -1,0 +1,33 @@
+{% extends "index.html" %}
+{% block content %}
+<div class="row" style="padding-top: 50px;">
+<h1>{{post.title}} <span class="label label-default">{{likes}} likes</span></h1>
+{% if user != None %}
+{% if post.author.identity == user.user_id() %}
+<a class="btn btn-warning" href="/edit/{{post.key.urlsafe()}}" role="button">Edit</a>
+<a class="btn btn-default" href="/delete/{{post.key.urlsafe()}}" role="button">Delete</a>
+{% else%}
+	<a class="btn btn-default" href="/like/{{post.key.urlsafe()}}" role="button">Like</a>
+{% endif %}
+{% endif %}
+<p>{{post.content}}</p>
+</div>
+
+<div class="row">
+{% for comment in comments %}
+	<div class="well">{{comment.text}}</div>
+{% endfor %}
+{% if user %}
+<form action="/new_comment/{{post.key.urlsafe()}}" method="post">
+  <div class="form-group">
+    <label for="Text">Text</label>
+    <textarea class="form-control" name="text" rows="6"></textarea>
+  </div>
+ 
+  <button type="submit" class="btn btn-default">Submit</button>
+</form>
+{% else %}
+<p>You need to log in to comment/like</p>
+{% endif %}
+</div>
+{% endblock %}

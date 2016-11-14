@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+<head>
+  <!-- [START css] -->
+  <link type="text/css" rel="stylesheet" href="/bootstrap/css/bootstrap.css">
+  <link type="text/css" rel="stylesheet" href="/bootstrap/css/bootstrap-responsive.css">
+  <!-- [END css] -->
+</head>
+<body>
+  <div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="brand" href="/">{{blog}}</a>
+        {% if user %}<a href="/new_post">Create a new blog post</a>{% endif %}
+        <div class="pull-right">
+          <a href="{{ url|safe }}">{{ url_text }}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    {% block content %}
+    <!-- [START blog] -->
+    {% for post in posts %}
+    <div class="row" style="padding-top: 50px;">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><a href="/post/{{post.key.urlsafe()}}">{{post.title}}</a></h3>
+        </div>
+        <div class="panel-body">
+          <p>{{post.content}}</p>
+        </div>
+      </div></div>
+      {% endfor %}
+      <!-- [END blog] -->
+      {% endblock %}
+    </div>
+  </body>
+  </html>
+  {% endautoescape %}
