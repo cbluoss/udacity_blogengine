@@ -93,7 +93,8 @@ class NewPost(webapp2.RequestHandler):
     def post(self):
         user = users.get_current_user
         if user:
-            if len(self.request.get('content')) > 3 and len(self.request.get('title')) > 3:
+            if len(self.request.get('content')) > 3 and \
+               len(self.request.get('title')) > 3:
                 posting = Post(author=Author(
                     identity=users.get_current_user().user_id(),
                     email=users.get_current_user().email()),
@@ -102,18 +103,23 @@ class NewPost(webapp2.RequestHandler):
                 )
                 posting.put()
                 self.redirect('/post/'+posting.key.urlsafe())
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
 
 
 class ShowPost(webapp2.RequestHandler):
 
     def get(self, post_id):
         posting = ndb.Key(urlsafe=post_id).get()
+        comments = Comment.query(Comment.post == posting).order(
+            Comment.date).fetch(10)
         template_data = {
             'blog': BLOG_NAME,
             'user': users.get_current_user(),
             'post': posting,
-            'comments': Comment.query(Comment.post == posting).order(Comment.date).fetch(10),
-            'likes': Like.query(Like.post == posting).count()
+            'comments': comments,
+            'likes': Like.query(Like.post == posting).count(),
+            'login': users.create_login_url(self.request.uri)
         }
         template = JINJA_ENVIRONMENT.get_template('post.html')
         self.response.write(template.render(template_data))
@@ -136,14 +142,17 @@ class DeletePost(webapp2.RequestHandler):
 class EditPost(webapp2.RequestHandler):
 
     def get(self, post_id):
-        post = ndb.Key(urlsafe=post_id).get()
-        template_data = {
-            'blog': BLOG_NAME,
-            'user': users.get_current_user(),
-            'post': post
-        }
-        template = JINJA_ENVIRONMENT.get_template('edit_post.html')
-        self.response.write(template.render(template_data))
+        if users.get_current_user() != None:
+            post = ndb.Key(urlsafe=post_id).get()
+            template_data = {
+                'blog': BLOG_NAME,
+                'user': users.get_current_user(),
+                'post': post
+            }
+            template = JINJA_ENVIRONMENT.get_template('edit_post.html')
+            self.response.write(template.render(template_data))
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
 
     def post(self, post_id):
         post = ndb.Key(urlsafe=post_id).get()
@@ -170,6 +179,43 @@ class AddComment(webapp2.RequestHandler):
             comment.put()
             self.redirect('/post/'+post.key.urlsafe())
         else:
+            self.redirect(users.create_login_url(self.request.uri))
+
+
+class DeleteComment(webapp2.RequestHandler):
+
+    def get(self, comment_id):
+        user = users.get_current_user()
+        comment = ndb.Key(urlsafe=comment_id).get()
+        if comment.author.identity == users.get_current_user().user_id():
+            comment.key.delete()
+            self.redirect('/')
+
+
+class EditComment(webapp2.RequestHandler):
+
+    def get(self, comment_id):
+        user = users.get_current_user()
+        comment = ndb.Key(urlsafe=comment_id).get()
+        if comment.author.identity == users.get_current_user().user_id():
+            template_data = {
+                'comment': comment,
+                'user': user,
+                'blog': BLOG_NAME
+            }
+            template = JINJA_ENVIRONMENT.get_template('edit_comment.html')
+            self.response.write(template.render(template_data))
+        else:
+            self.redirect(users.create_login_url(self.request.uri))
+
+    def post(self, comment_id):
+        user = users.get_current_user()
+        comment = ndb.Key(urlsafe=comment_id).get()
+        if comment.author.identity == users.get_current_user().user_id():
+            comment.text = self.request.get('text')
+            comment.put()
+            self.redirect('/')
+        else:
             self.response.set_status(403)
 
 
@@ -187,6 +233,9 @@ class LikePost(webapp2.RequestHandler):
                 email=users.get_current_user().email()),
                 post=post)
             like.put()
+        else:
+            # dislike
+            like.key.delete()
         self.redirect('/post/'+post.key.urlsafe())
 # [END views]
 
@@ -194,11 +243,12 @@ class LikePost(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/new_post', NewPost),
+    ('/delete/comment/(\S+)', DeleteComment),
+    ('/edit/comment/(\S+)', EditComment),
     ('/post/(\S+)', ShowPost),
     ('/delete/(\S+)', DeletePost),
     ('/edit/(\S+)', EditPost),
     ('/new_comment/(\S+)', AddComment),
     ('/like/(\S+)', LikePost),
-
 ], debug=True)
 # [END url map]

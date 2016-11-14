@@ -1,0 +1,21 @@
+{% extends "index.html" %}
+{% block content %}
+<div class="row" style="padding-top: 50px;">
+<div class="col-lg-12">
+{% if user %}
+<form action="/edit/comment/{{ comment.key.urlsafe() }}" method="post">
+  <div class="form-group">
+    <label for="Text">Text</label>
+    <textarea class="form-control" name="text" rows="3">{{comment.text}}</textarea>
+  </div>
+ 
+  <button type="submit" class="btn btn-default">Submit</button>
+  <a class="btn btn-warning" href="/" role="button">Back</a>
+
+</form>
+{% else %}
+<p>You need to log in</p>
+{% endif %}
+</div>
+</div>
+{% endblock %}
